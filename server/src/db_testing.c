@@ -1,11 +1,6 @@
 #include "db_testing.h"
+#include "config.h"
 #include "task_testing.h"
-
-#define DB_HOST "localhost"
-#define DB_PORT 0
-#define DB_NAME "dreamvault"
-#define DB_USER "root"
-#define DB_PASSWORD "hahaXD"
 
 static MYSQL *connect() {
   MYSQL *connection;
@@ -23,6 +18,81 @@ static MYSQL *connect() {
 
 static int disconnect(MYSQL *connection) {
   mysql_close(connection);
+  return 0;
+}
+
+int validate_page(int user_id, int page_id) {
+  MYSQL *connection = connect();
+  if (connection == NULL) {
+    return -1;
+  }
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT owner_id FROM pages WHERE page_id = %d", page_id);
+
+  if (mysql_query(connection, query)) {
+    disconnect(connection);
+    return -1;
+  }
+
+  MYSQL_RES *result = mysql_store_result(connection);
+  if (result == NULL) {
+    disconnect(connection);
+    return -1;
+  }
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row) {
+    mysql_free_result(result);
+    disconnect(connection);
+    return -1;
+  }
+
+  int actual_owner_id = atoi(row[0]);
+  mysql_free_result(result);
+  disconnect(connection);
+
+  if (actual_owner_id != user_id) {
+    return -1;
+  }
+  return 0;
+}
+int validate_vault(int user_id, int vault_id) {
+  MYSQL *connection = connect();
+  if (connection == NULL) {
+    return -1;
+  }
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT owner_id FROM vaults WHERE vault_id = %d", vault_id);
+
+  if (mysql_query(connection, query)) {
+    disconnect(connection);
+    return -1;
+  }
+
+  MYSQL_RES *result = mysql_store_result(connection);
+  if (result == NULL) {
+    disconnect(connection);
+    return -1;
+  }
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row) {
+    mysql_free_result(result);
+    disconnect(connection);
+    return -1;
+  }
+
+  int actual_owner_id = atoi(row[0]);
+  mysql_free_result(result);
+  disconnect(connection);
+
+  if (actual_owner_id != user_id) {
+    return -1;
+  }
   return 0;
 }
 
@@ -59,28 +129,44 @@ int validate_token(char token[33], int *owner_user_id) {
   return 0;
 }
 
-int get_vault_pages(int vault_id) {
+int get_vault_pages(int vault_id, int **pages, int *page_count) {
   MYSQL *connection = connect();
-  if (connection == NULL)
+  if (connection == NULL) {
     return -1;
+  }
 
   char query[256];
-  snprintf(query, sizeof(query), "SELECT * FROM pages WHERE vault_id = %d",
-           vault_id);
+  snprintf(query, sizeof(query),
+           "SELECT page_id FROM pages WHERE vault_id = %d", vault_id);
 
   if (mysql_query(connection, query)) {
     disconnect(connection);
     return -1;
   }
+
   MYSQL_RES *result = mysql_store_result(connection);
   if (result == NULL) {
     disconnect(connection);
     return -1;
   }
 
+  int num_rows = mysql_num_rows(result);
+  if (num_rows > 0) {
+    *pages = malloc(num_rows * sizeof(int));
+    if (*pages == NULL) {
+      mysql_free_result(result);
+      disconnect(connection);
+      return -1;
+    }
+  } else {
+    *pages = NULL;
+  }
+
+  *page_count = 0;
   MYSQL_ROW row;
   while ((row = mysql_fetch_row(result))) {
-    printf("page ID: %s\n", row[0]);
+    (*pages)[*page_count] = atoi(row[0]);
+    (*page_count)++;
   }
 
   mysql_free_result(result);
@@ -127,6 +213,7 @@ int get_user_vaults(int user_id, int **vaults, int *vault_count) {
     (*vaults)[*vault_count] = atoi(row[0]);
     (*vault_count)++;
   }
+
   mysql_free_result(result);
   disconnect(connection);
   return 0;
@@ -354,6 +441,110 @@ int delete_session(char *token) {
   disconnect(connection);
   return 0;
 }
+
+int get_vault_info(int vault_id, char *name, int *page_count) {
+  MYSQL *connection = connect();
+  if (connection == NULL) {
+    return -1;
+  }
+
+  char query[256];
+  snprintf(query, sizeof(query), "SELECT name FROM vaults WHERE vault_id = %d",
+           vault_id);
+
+  if (mysql_query(connection, query)) {
+    disconnect(connection);
+    return -1;
+  }
+
+  MYSQL_RES *result = mysql_store_result(connection);
+  if (result == NULL) {
+    disconnect(connection);
+    return -1;
+  }
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (!row) {
+    mysql_free_result(result);
+    disconnect(connection);
+    return -1;
+  }
+
+  strncpy(name, row[0], 255);
+  name[255] = '\0';
+  mysql_free_result(result);
+
+  snprintf(query, sizeof(query),
+           "SELECT COUNT(*) FROM pages WHERE vault_id = %d", vault_id);
+
+  if (mysql_query(connection, query)) {
+    disconnect(connection);
+    return -1;
+  }
+
+  result = mysql_store_result(connection);
+  if (result == NULL) {
+    disconnect(connection);
+    return -1;
+  }
+
+  row = mysql_fetch_row(result);
+  if (!row) {
+    mysql_free_result(result);
+    disconnect(connection);
+    return -1;
+  }
+
+  *page_count = atoi(row[0]);
+  mysql_free_result(result);
+
+  disconnect(connection);
+  return 0;
+}
+
+int get_page_info(int page_id, char title[256], char file_path[256],
+                  int *file_size) {
+  MYSQL *conn = connect();
+  if (conn == NULL) {
+    return -1;
+  }
+
+  char query[1024];
+  snprintf(query, sizeof(query),
+           "SELECT title, file_path, file_size FROM pages WHERE page_id = %d",
+           page_id);
+
+  if (mysql_query(conn, query)) {
+    fprintf(stderr, "Failed to query database: %s\n", mysql_error(conn));
+    disconnect(conn);
+    return -1;
+  }
+
+  MYSQL_RES *result = mysql_store_result(conn);
+  if (result == NULL) {
+    fprintf(stderr, "Failed to store result: %s\n", mysql_error(conn));
+    disconnect(conn);
+    return -1;
+  }
+
+  MYSQL_ROW row = mysql_fetch_row(result);
+  if (row == NULL) {
+    fprintf(stderr, "No record found.\n");
+    mysql_free_result(result);
+    disconnect(conn);
+    return -1;
+  }
+
+  strncpy(title, row[0], 255);
+  title[255] = '\0';
+  strncpy(file_path, row[1], 255);
+  file_path[255] = '\0';
+  *file_size = atoi(row[2]);
+
+  mysql_free_result(result);
+  disconnect(conn);
+  return 0;
+}
 int get_user_id(const char *email, int *user_id, char password[65]) {
 
   MYSQL *connection = connect();
@@ -432,6 +623,7 @@ int main() {
   //         {
   //   printf("error");
   // } else {
+  //
   //   printf("ok");
   // }
   // struct HTTP_RESPONSE response =
@@ -440,10 +632,50 @@ int main() {
   // int *vaults = NULL;
   // int vault_count = 0;
   // int user_id = 123; // Example user ID
-  struct HTTP_RESPONSE response = t_users_user_vaults_post(
-      "0484253aa7baaa61af4ade4ea7f11aab", "new vaultxd");
+  struct HTTP_RESPONSE response =
+      t_users_user_vaults_vault_pages_page_delete(27, 28);
+
   printf("%s", response.body);
   //
+  // char title[256], file_path[256];
+  // int file_size;
+  // int page_id = 28; // Example page ID
+  //
+  // if (get_page_info(page_id, title, file_path, &file_size) == 0) {
+  //   printf("Title: %s\n", title);
+  //   printf("File Path: %s\n", file_path);
+  //   printf("File Size: %d\n", file_size);
+  // } else {
+  //   printf("Error retrieving page information.\n");
+  // }
+  // //
+  //
+  // if (validate_page(23, 17)) {
+  //   printf("Unauthorized");
+  // } else {
+  //
+  //   printf("authorized");
+  // }
+  // int vault_id = 17; // Example vault_id
+  // int *pages = NULL;
+  // int page_count = 0;
+  //
+  // int result = get_vault_pages(vault_id, &pages, &page_count);
+  // if (result == 0) {
+  //   if (page_count > 0) {
+  //
+  //     printf("Pages in Vault %d:\n", page_count);
+  //
+  //     for (int i = 0; i < page_count; i++) {
+  //       printf("%d\n", pages[i]);
+  //     }
+  //     free(pages);
+  //   } else {
+  //     printf("No pages found.\n");
+  //   }
+  // } else {
+  //   printf("Failed to retrieve pages.\n");
+  // }
   // if (get_user_vaults(23, &vaults, &vault_count) == 0) {
   //   for (int i = 0; i < vault_count; i++) {
   //     printf("Vault ID: %d\n", vaults[i]);
