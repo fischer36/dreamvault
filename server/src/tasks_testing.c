@@ -145,7 +145,6 @@ struct HTTP_RESPONSE t_users_user_vaults_get(char *token) {
   if (vault_count == 0) {
     strcpy(response.code, "200 OK\r\n");
     strcpy(response.body, "User has no vaults");
-    free(vaults);
     return response;
   }
 
@@ -156,6 +155,8 @@ struct HTTP_RESPONSE t_users_user_vaults_get(char *token) {
     snprintf(line, sizeof(line), "%d, ", vaults[i]);
     strcat(response.body, line);
   }
+
+  free(vaults);
   int len = strlen(response.body);
   response.body[len - 2] = '\0';
   return response;
@@ -188,12 +189,206 @@ struct HTTP_RESPONSE t_users_user_vaults_post(char *token, char *title) {
   return response;
 };
 
-struct HTTP_RESPONSE t_users_user_vaults_vault_get();
-struct HTTP_RESPONSE t_users_user_vaults_vault_delete();
+struct HTTP_RESPONSE t_users_user_vaults_vault_get(int user_id, int vault_id) {
 
-struct HTTP_RESPONSE t_users_user_vaults_vault_pages_get();
-struct HTTP_RESPONSE t_users_user_vaults_vault_pages_post();
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
 
-struct HTTP_RESPONSE t_users_user_vaults_vault_pages_page_get();
-struct HTTP_RESPONSE t_users_user_vaults_vault_pages_page_patch();
-struct HTTP_RESPONSE t_users_user_vaults_vault_pages_page_delete();
+  strcpy(response.code, "500 Internal Server Error\r\n");
+
+  if (validate_vault(user_id, vault_id)) {
+    strcpy(response.code, "401 Unauthorized\r\n");
+    strcpy(response.body, "Unauthorized user for vault");
+    return response;
+  }
+  char vault_name[255] = {0};
+  int vault_page_count = 0;
+
+  if (get_vault_info(vault_id, vault_name, &vault_page_count)) {
+    strcpy(response.code, "500 Internal Server Error\r\n");
+    strcpy(response.body, "Unable get vault info");
+    return response;
+  }
+  strcpy(response.code, "200 OK\r\n");
+  snprintf(response.body, sizeof(response.body),
+           "vault_name = \"%s\"\nvault_page_count = %d", vault_name,
+           vault_page_count);
+  return response;
+}
+struct HTTP_RESPONSE t_users_user_vaults_vault_delete(int user_id,
+                                                      int vault_id) {
+
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
+
+  strcpy(response.code, "500 Internal Server Error\r\n");
+
+  if (validate_vault(user_id, vault_id)) {
+    strcpy(response.code, "401 Unauthorized\r\n");
+    strcpy(response.body, "Unauthorized user for vault");
+    return response;
+  }
+
+  if (delete_vault(vault_id)) {
+    strcpy(response.code, "500 Internal Server Error\r\n");
+    strcpy(response.body, "Unable to delete vault");
+    return response;
+  }
+  strcpy(response.code, "200 OK\r\n");
+  strcpy(response.body, "Successfully deleted vault");
+  return response;
+}
+struct HTTP_RESPONSE t_users_user_vaults_vault_pages_get(int user_id,
+                                                         int vault_id) {
+
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
+
+  strcpy(response.code, "500 Internal Server Error\r\n");
+
+  if (validate_vault(user_id, vault_id)) {
+    strcpy(response.code, "401 Unauthorized\r\n");
+    strcpy(response.body, "Unauthorized user for vault");
+    return response;
+  }
+
+  int *pages = NULL;
+  int page_count = 0;
+
+  if (get_vault_pages(vault_id, &pages, &page_count)) {
+    strcpy(response.code, "500 Internal Server Error\r\n");
+    strcpy(response.body, "Unable to fetch vaults pages");
+    return response;
+  }
+
+  if (page_count == 0) {
+    strcpy(response.code, "200 OK\r\n");
+    strcpy(response.body, "Vault has no pages");
+    return response;
+  }
+
+  strcpy(response.code, "200 OK\r\n");
+  char line[50];
+  strcpy(response.body, "Page IDs: ");
+  for (int i = 0; i < page_count; i++) {
+    snprintf(line, sizeof(line), "%d, ", pages[i]);
+    strcat(response.body, line);
+  }
+
+  free(pages);
+  int len = strlen(response.body);
+  response.body[len - 2] = '\0';
+  return response;
+}
+
+struct HTTP_RESPONSE
+t_users_user_vaults_vault_pages_post(int user_id, int vault_id, char *file_path,
+                                     char *title, char *content) {
+
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
+
+  strcpy(response.code, "500 Internal Server Error\r\n");
+
+  if (validate_vault(user_id, vault_id)) {
+    strcpy(response.code, "401 Unauthorized\r\n");
+    strcpy(response.body, "Unauthorized user for page in vault");
+    return response;
+  }
+
+  if (insert_page(user_id, vault_id, file_path, title)) {
+    strcpy(response.code, "500 Internal Server Error\r\n");
+    strcpy(response.body, "Unable to create page in vault");
+    return response;
+  }
+  strcpy(response.code, "200 OK\r\n");
+  strcpy(response.body, "Successfully created page in vault");
+  return response;
+}
+
+struct HTTP_RESPONSE t_users_user_vaults_vault_pages_page_get(int user_id,
+                                                              int vault_id,
+                                                              int page_id) {
+
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
+
+  strcpy(response.code, "500 Internal Server Error\r\n");
+
+  if (validate_vault(user_id, vault_id)) {
+    strcpy(response.code, "401 Unauthorized\r\n");
+    strcpy(response.body, "Unauthorized user for page in vault");
+    return response;
+  }
+  char title[256], file_path[256];
+  int file_size;
+
+  if (get_page_info(page_id, title, file_path, &file_size)) {
+    strcpy(response.code, "500 Internal Server Error\r\n");
+    strcpy(response.body, "Unable to fetch page info");
+    return response;
+  }
+
+  strcpy(response.code, "200 OK\r\n");
+  snprintf(response.body, sizeof(response.body),
+           "page_title = \"%s\"\npage_path = \"%s\"\npage_size = %d", title,
+           file_path, file_size);
+  return response;
+}
+struct HTTP_RESPONSE
+t_users_user_vaults_vault_pages_page_patch(int user_id, int vault_id,
+                                           int page_id, char *new_title,
+                                           char *new_content) {
+
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
+
+  strcpy(response.code, "200 OK\r\n");
+  strcpy(response.body, "Successfully patched page");
+  return response;
+}
+
+struct HTTP_RESPONSE t_users_user_vaults_vault_pages_page_delete(int user_id,
+                                                                 int page_id) {
+
+  struct HTTP_RESPONSE response = {
+      .code = "",
+      .body = "",
+      .headers = "",
+  };
+
+  strcpy(response.code, "500 Internal Server Error\r\n");
+
+  if (validate_page(user_id, page_id)) {
+    strcpy(response.code, "401 Unauthorized\r\n");
+    strcpy(response.body, "Unauthorized user for page");
+    return response;
+  }
+
+  if (delete_page(page_id)) {
+    strcpy(response.code, "500 Internal Server Error\r\n");
+    strcpy(response.body, "Unable to delete page");
+    return response;
+  }
+  strcpy(response.code, "200 OK\r\n");
+  strcpy(response.body, "Successfully deleted page");
+  return response;
+}
