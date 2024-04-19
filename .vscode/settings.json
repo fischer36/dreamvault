@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "stat.h": "c",
+        "mysql.h": "c",
+        "stdlib.h": "c",
+        "sodium.h": "c",
+        "windows.h": "c",
+        "file_handler.h": "c",
+        "stdio.h": "c",
+        "vector": "c",
+        "type_traits": "c",
+        "xtr1common": "c",
+        "winsock2.h": "c",
+        "ws2tcpip.h": "c",
+        "database_handler.h": "c",
+        "ssl.h": "c",
+        "network.h": "c",
+        "stdbool.h": "c",
+        "string.h": "c",
+        "xd_database2.c": "cpp",
+        "time.h": "c",
+        "errno.h": "c",
+        "db.h": "c",
+        "worker.h": "c",
+        "util.h": "c",
+        "sys.h": "c"
+    },
+    "functionHeaderExtension.headerFilePath": "c:\\Users\\joakr\\Desktop\\markdown_reader\\back-end\\src\\test.h"
+}
