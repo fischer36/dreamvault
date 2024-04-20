@@ -28,5 +28,6 @@ int get_user_id(const char *email, int *user_id, char *password);
 
 int get_vault_info(int vault_id, char *name, int *page_count);
 
-int get_page_info(int page_id, char title[256], char file_path[256],
-                  int *file_size);
+int get_page_info(int page_id, int *user_id, char title[256],
+                  char file_path[256], int *file_size);
+int get_page_counter();

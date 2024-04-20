@@ -1,6 +1,9 @@
 // #include "api.h"
+#include "api_xd.h"
 #include "config.h"
-
+#include "db_testing.h"
+#include "sys.h"
+#include "task_testing.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -19,6 +22,14 @@ pthread_t thread_handles[MAX_CLIENTS];
 int thread_count = 0;
 
 int ok(char buffer[1024]) {
+  // int i = get_page_counter();
+  // return 0;
+  struct HTTP_RESPONSE responsexd2 = t_user_page_write(36, buffer);
+  printf("%s", responsexd2.body);
+  return 0;
+  // struct HTTP_RESPONSE responsexd2 = t_register(buffer);
+  printf("%s", responsexd2.body);
+  return 0;
   char *uri_start = strstr(buffer, " ");
   uri_start += 1;
   char *uri_end = strstr(uri_start, " ");
@@ -26,6 +37,9 @@ int ok(char buffer[1024]) {
   strncpy(uri_str, uri_start, uri_end - uri_start);
   uri_str[uri_end - uri_start] = '\0';
   printf("URI: %s\n", uri_str);
+
+  one_slash(buffer, uri_str);
+  return 0;
   /*
    * - register (post) ✔
    * - unregister (post) ✔
@@ -203,6 +217,12 @@ int start_server() {
 }
 
 int main() {
+  // if (sys_file_exists("./hello/ok.txt")) {
+  // } else {
+  // }
+  // int i = get_page_counter();
   start_server();
+  //
+
   return 0;
 }

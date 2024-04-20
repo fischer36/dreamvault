@@ -8,3 +8,4 @@ server/src/tests/
 server/src/requests/
 server/src/ssl_windows.c
 server/src/ssl_linux.c
+server/pages/ 
