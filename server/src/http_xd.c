@@ -5,6 +5,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+enum UriType { USER, PAGE, LOGIN, LOGOUT, REGISTER, UNREGISTER, INVALID };
+
+union Uri {
+  struct {
+    // /User/<user_id>
+    int user_id;
+  } User;
+
+  struct {
+    // /User/<user_id>/page/<page_id>
+    int user_id;
+    int page_id;
+  } Page;
+};
+
 int extract_body(const char *buffer, char **body) {
   const char *start = buffer;
   const char *body_start = strstr(start, "\r\n\r\n");
