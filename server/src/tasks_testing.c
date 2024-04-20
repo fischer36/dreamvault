@@ -536,7 +536,7 @@ struct HTTP_RESPONSE t_users_user_vaults_vault_pages_page_delete(int user_id,
   return response;
 }
 
-struct HTTP_RESPONSE t_user_page_write(int page_id, char request[1024]) {
+struct HTTP_RESPONSE t_page_write(int page_id, char request[1024]) {
 
   struct HTTP_RESPONSE response = {
       .code = "",
@@ -609,7 +609,7 @@ struct HTTP_RESPONSE t_user_page_write(int page_id, char request[1024]) {
   return response;
 }
 
-struct HTTP_RESPONSE t_user_page_create(char request[1024]) {
+struct HTTP_RESPONSE t_page_create(char request[1024]) {
   struct HTTP_RESPONSE response = {
       .code = "",
       .body = "",

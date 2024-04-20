@@ -13,11 +13,10 @@ struct HTTP_RESPONSE t_register(const char request[1024]);
 struct HTTP_RESPONSE t_unregister(char *token);
 
 struct HTTP_RESPONSE t_page_delete(int page_id, char buffer[1024]);
-
-struct HTTP_RESPONSE t_user_page_write(int page_id, char request[1024]);
-
-struct HTTP_RESPONSE t_user_page_create(char request[1024]);
+struct HTTP_RESPONSE t_page_write(int page_id, char request[1024]);
+struct HTTP_RESPONSE t_page_create(char request[1024]);
 struct HTTP_RESPONSE t_page_read(int page_id, char buffer[1024]);
+
 struct HTTP_RESPONSE t_users_user_vaults_get(char *token);
 struct HTTP_RESPONSE t_users_user_vaults_post(char *token, char *title);
 
