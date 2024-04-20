@@ -7,6 +7,7 @@
 #else
 #include <windows.h>
 #endif
+
 bool sys_folder_exists(const char *folderPath) {
   bool exists = false;
 #ifdef __linux__
@@ -14,8 +15,10 @@ bool sys_folder_exists(const char *folderPath) {
   if (dir != NULL) {
     closedir(dir);
     exists = true;
+  } else {
+
+    exists = false;
   }
-  exists = false;
 #else
   DWORD attributes = GetFileAttributes(folderPath);
 
@@ -50,8 +53,7 @@ int sys_folder_create(const char *folderPath) {
   return 1;
 }
 
-int sys_file_write(const char *filePath, const char *data, size_t *size) {
-
+int sys_file_write(const char *filePath, const char *data) {
   FILE *file = fopen(filePath, "wb");
   if (file == NULL) {
     printf("[error] failed to open file for writing\n");
@@ -67,10 +69,6 @@ int sys_file_write(const char *filePath, const char *data, size_t *size) {
   }
 
   fclose(file);
-
-  if (size != NULL) {
-    *size = dataSize;
-  }
 
   return 0;
 }
