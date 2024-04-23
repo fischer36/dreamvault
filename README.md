@@ -29,24 +29,25 @@
 ## API & Worker changes:
 - Tasks User
     - login [x] 
-       request: POST /login 
+       - request: POST /login 
+       - response: (Body) Token: <token>
     - logout [x]
-       request: POST /logout 
+       - request: POST /logout (Body)Token: <token>
     - register[x]
-       request: POST /register 
+       - request: POST /register 
     - unregister [x]
-       request: POST /unregister
-- Tasks Page 
+       - request: POST /unregister (Body)Token: <token> 
+- Tasks Page
     - read [x]
-       request: GET /user/<page_id>/page/<page_id>
-       response: page content
+       - request: GET /user/<page_id>/page/<page_id>
+       - response: (Body) (raw page_data)
     - create [x]
-       request: POST /user/<page_id>/page/<page_id> 
-       response: page id 
+       - request: POST /user/<page_id>/page/<page_id> (Body) Title: title Content: content
+       - response: (Body) page_id: <page_id>
     - write [x]
-       request: PATCH /user/<page_id>/page/<page_id>
+       - request: PATCH /user/<page_id>/page/<page_id>
     - delete [x]
-       request: DELETE /user/<page_id>/page/<page_id>
+       - request: DELETE /user/<page_id>/page/<page_id>
 
 - HTTP-parser 
     - [ ] need a way to sort request based on URI aswell as extracting URI information such as user_id, page_id, vaultid. Should probably just count number of slashes in URI to determine the task.
