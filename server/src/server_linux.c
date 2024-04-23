@@ -2,6 +2,7 @@
 #include "api_xd.h"
 #include "config.h"
 #include "db_testing.h"
+#include "http_xd.h"
 #include "sys.h"
 #include "task_testing.h"
 #include <errno.h>
@@ -22,9 +23,8 @@ pthread_t thread_handles[MAX_CLIENTS];
 int thread_count = 0;
 
 int ok(char buffer[1024]) {
-  // int i = get_page_counter();
-  // return 0;
-  struct HTTP_RESPONSE responsexd2 = t_user_page_write(36, buffer);
+
+  struct HTTP_RESPONSE responsexd2 = t_page_read(36, buffer);
   printf("%s", responsexd2.body);
   return 0;
   // struct HTTP_RESPONSE responsexd2 = t_register(buffer);
@@ -103,7 +103,7 @@ void *handle_client(void *client_socket) {
   read(sock, buffer, 1024);
   printf("Client: %s\n", buffer);
   char response[1024];
-  ok(buffer);
+  parse(buffer);
   // api_request_handler(buffer, response);
   write(sock, "Hello, client!", 14);
 

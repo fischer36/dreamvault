@@ -1,11 +1,25 @@
 
 #include "http_xd.h"
-#include "http_parser.h"
-// #include "task_testing.h"
+// #include "http_parser.h"
+#include "task_testing.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+int parse_http_response(struct HTTP_RESPONSE response, char **body) {
+  size_t total_size =
+      strlen(response.code) + strlen(response.headers) + strlen(response.body);
+  *body = malloc(total_size);
+  if (*body == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    return -1;
+  }
+  strcpy(*body, response.code);
+  strcat(*body, response.headers);
+  strcat(*body, response.body);
+  return 0;
+}
 
 static enum MethodType get_method(const char buffer[1024]) {
   const char *method_start = buffer;
@@ -121,89 +135,54 @@ int extract_body(const char *buffer, char **body) {
 }
 
 int parse(char request[1024]) {
+  struct HTTP_RESPONSE response;
+  union Uri uri;
 
   enum MethodType method = get_method(request);
-  if (method == M_INVALID) {
-    return -1;
-  }
-
-  union Uri uri;
   enum UriType uri_type = get_uri(request, &uri);
 
-  if (uri_type == U_INVALID) {
-    printf("Invalid %s\n", uri.Invalid);
-    return -1;
+  if (uri_type == U_INVALID && method != M_INVALID) {
+    struct HTTP_RESPONSE invalid_response = {
+        .code = "500 Internal Server Error\r\n",
+        .body = "Invalid method",
+        .headers = "",
+    };
+    response = invalid_response;
+  } else if (uri_type == U_VALID) {
+    if (strcmp(uri.Valid, "/register") == 0 && method == M_POST) {
+      response = t_register(request);
+    } else if (strcmp(uri.Valid, "/unregister") == 0 && method == M_POST) {
+      response = t_unregister(request);
+    } else if (strcmp(uri.Valid, "/login") == 0 && method == M_POST) {
+      response = t_login(request);
+    } else if (strcmp(uri.Valid, "/logout") == 0 && method == M_POST) {
+      response = t_logout(request);
+    }
+  } else if (uri_type == U_USER) {
+    printf("User %d\n", uri.User.user_id);
+  } else if (uri_type == U_USER_PAGE) {
+    switch (method) {
+    case M_POST:
+      response = t_page_create(request);
+      break;
+    case M_GET:
+      response = t_page_read(uri.Page.page_id, request);
+      break;
+    case M_PATCH:
+      response = t_page_write(uri.Page.page_id, request);
+      break;
+    case M_DELETE:
+      response = t_page_delete(uri.Page.page_id, request);
+      break;
+    case M_INVALID:
+      break;
+    }
   }
 
-  switch (method) {
-  case M_POST:
-    printf("post\n");
-    break;
-  case M_GET:
-    printf("get\n");
-    break;
-  case M_PATCH:
-    printf("patch\n");
-    break;
-  case M_DELETE:
-    printf("delete\n");
-    break;
-  case M_INVALID:
-    printf("invalid method");
-    return -1;
+  char *response_str = NULL;
+  if (response_str = parse_http_response(response, &response_str)) {
+    printf("%s", response_str);
+    free(response_str);
+    return 0;
   }
-  switch (uri_type) {
-  case U_INVALID:
-    printf("Invalid URI %s\n", uri.Invalid);
-    return -1;
-  case U_VALID:
-    printf("Valid %s\n", uri.Valid);
-    break;
-  case U_USER:
-    printf("User %d\n", uri.User.user_id);
-    break;
-  case U_USER_PAGE:
-    printf("User %d Page %d\n", uri.Page.user_id, uri.Page.page_id);
-    break;
-  }
-  return 0;
-  // if (uri_type == U_INVALID) {
-  //   printf("Invalid %s\n", uri.Invalid);
-  //   return -1;
-  // } else if (uri_type == U_USER) {
-  //   printf("User %d\n", uri.User.user_id);
-  // } else if (uri_type == U_USER_PAGE) {
-  //   printf("User %d Page %d\n", uri.Page.user_id, uri.Page.page_id);
-  //   switch (method) {
-  //   case M_POST:
-  //     t_page_create(request);
-  //     break;
-  //   case M_GET:
-  //     t_page_read(uri.Page.page_id, request);
-  //     break;
-  //   case M_PATCH:
-  //     t_page_write(uri.Page.page_id, request);
-  //     break;
-  //   case M_DELETE:
-  //     t_page_delete(uri.Page.page_id, request);
-  //     break;
-  //   case M_INVALID:
-  //     return -1;
-  //   }
-  // } else if (uri_type == U_VALID) {
-  //   if (strcmp(uri.Valid, "/register") == 0 && method == M_POST) {
-  //     t_register(request);
-  //     return 0;
-  //   } else if (strcmp(uri.Valid, "/unregister") == 0 && method == M_POST) {
-  //     t_unregister(request);
-  //     return 0;
-  //   } else if (strcmp(uri.Valid, "/login") == 0 && method == M_POST) {
-  //     t_login(request);
-  //     return 0;
-  //   } else if (strcmp(uri.Valid, "/logout") == 0 && method == M_POST) {
-  //     t_logout(request);
-  //     return 0;
-  //   }
-  // }
-  return -1;
 }

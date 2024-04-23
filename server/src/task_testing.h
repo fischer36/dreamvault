@@ -1,10 +1,8 @@
 #pragma once
-
-struct HTTP_RESPONSE {
-  char code[65];
-  char headers[513];
-  char body[513];
-};
+#include "http_xd.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct HTTP_RESPONSE t_login(char buffer[1024]);
 struct HTTP_RESPONSE t_logout(char *token);

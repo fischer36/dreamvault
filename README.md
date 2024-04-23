@@ -19,24 +19,36 @@
 - [X] task_handler and it's called task functions need to fill out the http response based on the task status.
 - [ ] Fix Namings, consistent and simple.
 - [X] De-spaghettify (maybe).
+- [X] Makefile.
+- [ ] Makefile cross-platform and release build.
 - [ ] Integrate docker.
 - [ ] Add SSL.
 - [ ] SQL database documentation.
 - [ ] Finalize and start using.
 
-
 ## API & Worker changes:
 - Tasks User
-    login [x] 
-    logout [x]
-    register [x]
-    unregister [x]
+    - login [x] 
+       request: POST /login 
+    - logout [x]
+       request: POST /logout 
+    - register[x]
+       request: POST /register 
+    - unregister [x]
+       request: POST /unregister
 - Tasks Page 
-    read [x]
-    write [x]
-    create [x]
-    delete [x]
+    - read [x]
+       request: GET /user/<page_id>/page/<page_id>
+       response: page content
+    - create [x]
+       request: POST /user/<page_id>/page/<page_id> 
+       response: page id 
+    - write [x]
+       request: PATCH /user/<page_id>/page/<page_id>
+    - delete [x]
+       request: DELETE /user/<page_id>/page/<page_id>
+
 - HTTP-parser 
-    [ ] need a way to sort request based on URI aswell as extracting URI information such as user_id, page_id, vaultid. Should probably just count number of slashes in URI to determine the task.
+    - [ ] need a way to sort request based on URI aswell as extracting URI information such as user_id, page_id, vaultid. Should probably just count number of slashes in URI to determine the task.
 - Client 
-    [ ] Make use of the API functions and make it usable.
+    - [ ] Make use of the API functions and make it usable.

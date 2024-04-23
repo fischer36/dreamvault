@@ -34,12 +34,19 @@ union Uri {
 };
 
 #include "stdio.h"
-static enum UriType two_slash(const char uri_str[512], union Uri *uri);
-static enum UriType one_slash(const char uri_str[512], union Uri *uri);
+// static enum UriType two_slash(const char uri_str[512], union Uri *uri);
+// static enum UriType one_slash(const char uri_str[512], union Uri *uri);
 
 // enum MethodType get_method(const char buffer[1024]);
 // enum UriType get_uri(const char buffer[1024], union Uri *uri);
 
+struct HTTP_RESPONSE {
+  char code[65];
+  char headers[513];
+  char body[513];
+};
 int extract_body(const char *buffer, char **body);
 
 int parse(char request[1024]);
+
+int parse_http_response(struct HTTP_RESPONSE response, char **body);
