@@ -14,10 +14,11 @@ int insert_vault(int user_id, char *title);
 int delete_vault(int vault_id);
 
 int insert_page(int user_id, int vault_id, char *file_path, char *title);
+int update_page(int page_id, char *title, char *content, int file_size);
 int delete_page(int page_id);
 
 int get_user_vaults(int user_id, int **vaults, int *vault_count);
-int get_user_pages(int user_id);
+int get_user_pages(int user_id, int **pages, int *page_count);
 int get_vault_pages(int vault_id, int **pages, int *page_count);
 
 int validate_token(char token[33], int *owner_user_id);
@@ -28,6 +29,9 @@ int get_user_id(const char *email, int *user_id, char *password);
 
 int get_vault_info(int vault_id, char *name, int *page_count);
 
-int get_page_info(int page_id, int *user_id, char title[256],
-                  char file_path[256], int *file_size);
+int get_page_info(int page_id, int *user_id, char title[256], char file_path[256], int *file_size);
 int get_page_counter();
+
+int get_user(char token[33], int *user_id);
+
+int get_page_version(int page_id, int *version);

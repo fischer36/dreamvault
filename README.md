@@ -1,4 +1,4 @@
-# Dreamvault
+# Dreamvault - An overcomplicated mess :)
 
 - Server: Sets up a TCP listener configured in config.h
 - Api: Interface between the TCP listener and back-end code.
@@ -34,20 +34,20 @@
     - logout [x]
        - request: POST /logout (Body)Token: <token>
     - register[x]
-       - request: POST /register 
+       - request: POST /register (Body)Email: <username> Password: <password>
     - unregister [x]
        - request: POST /unregister (Body)Token: <token> 
 - Tasks Page
     - read [x]
-       - request: GET /user/<page_id>/page/<page_id>
+       - request: GET /users/<user_id>/pages/<page_id>
        - response: (Body) (raw page_data)
     - create [x]
-       - request: POST /user/<page_id>/page/<page_id> (Body) Title: title Content: content
+       - request: POST /users/user_id>/pages/<page_id> (Body) Title: title Content: content
        - response: (Body) page_id: <page_id>
     - write [x]
-       - request: PATCH /user/<page_id>/page/<page_id>
+       - request: PATCH /users/<user_id>/pages/<page_id>
     - delete [x]
-       - request: DELETE /user/<page_id>/page/<page_id>
+       - request: DELETE /users/<user_id>/pages/<page_id>
 
 - HTTP-parser 
     - [ ] need a way to sort request based on URI aswell as extracting URI information such as user_id, page_id, vaultid. Should probably just count number of slashes in URI to determine the task.

@@ -15,6 +15,10 @@ struct HTTP_RESPONSE t_page_write(int page_id, char request[1024]);
 struct HTTP_RESPONSE t_page_create(char request[1024]);
 struct HTTP_RESPONSE t_page_read(int page_id, char buffer[1024]);
 
+// Fills out response body with a list of page ids on success.
+struct HTTP_RESPONSE t_get_user_pages(int user_id);
+
+// The following are old functions
 struct HTTP_RESPONSE t_users_user_vaults_get(char *token);
 struct HTTP_RESPONSE t_users_user_vaults_post(char *token, char *title);
 
