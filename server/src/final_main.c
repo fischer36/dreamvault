@@ -1,11 +1,5 @@
-#include "final_api.h"
-// #include "final_http.h"
-// #include "final_task.h"
-// #include "final_db.h"
-#include "final_db.h"
-#include "final_server.c"
+#include "final_server.h"
 #include <stdio.h>
-#include <string.h>
 int main() {
     int user_id = 0;
     char *token = "d7118ed59ab3b8f263dbdd54596a7d83";

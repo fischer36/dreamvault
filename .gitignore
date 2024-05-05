@@ -1,4 +1,7 @@
-client/
+client/src/old
+client/.vault
+client/target
+client/.auth
 server/pages/
 server/build/
 server/src/old/

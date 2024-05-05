@@ -34,10 +34,10 @@ struct HTTP_RESPONSE t_get_user_pages(int user_id) {
         .body = "",
         .headers = "",
     };
-    int *page_ids = NULL;
+    struct Page *pages = NULL;
     int page_count = 0;
     strcpy(response.code, "500 Internal Server Error\r\n");
-    if (get_user_pages(user_id, &page_ids, &page_count)) {
+    if (get_user_pages(user_id, &pages, &page_count)) {
         strcpy(response.code, "404 Not Found\r\n");
         strcpy(response.body, "Unable to get user pages");
         return response;
@@ -47,14 +47,14 @@ struct HTTP_RESPONSE t_get_user_pages(int user_id) {
     // }
 
     strcpy(response.code, "200 OK\r\n");
-    strcpy(response.body, "Page IDs: ");
+    strcpy(response.body, "Pages:\r\n");
 
-    char line[50];
+    char line[70];
     for (int i = 0; i < page_count; i++) {
-        snprintf(line, sizeof(line), "%d, ", page_ids[i]);
+        snprintf(line, sizeof(line), "id: %d, version: %d\n", pages[i].id, pages[i].version);
         strcat(response.body, line);
     }
-    free(page_ids);
+    free(pages);
     return response;
 }
 struct HTTP_RESPONSE t_login(char email[EMAIL_LENGTH], char password[PASSWORD_LENGTH]) {

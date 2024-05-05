@@ -1,10 +1,13 @@
 # Dreamvault
 
 ## Dependencies:
-- OpenSSL for hashing and generating tokens and MySQL for database interaction.
+- libmysqlclient-dev
+- libssl-dev 
+- build-essential, gcc & make
 
 ## TODO:
+- [X] Docker
+- [X] Sort out dependencies
 - [ ] Client App
-- [ ] Vault intergration
-- [ ] Docker
-- [ ] Localize dependencies
+- [ ] Client sync workspace
+- [ ] Intergrate server-vault and db in regards to docker. 

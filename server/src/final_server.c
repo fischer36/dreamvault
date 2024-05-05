@@ -1,7 +1,5 @@
 #include "config.h"
 #include "final_api.h"
-#include "final_http.h"
-// #include "http_xd.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -56,12 +54,6 @@ void *command_listener(void *param) {
 
 int start_server() {
 
-    pthread_t command_thread;
-    int test = 0;
-    if (pthread_create(&command_thread, NULL, command_listener, (void *)&test) != 0) {
-        perror("Failed to create command thread");
-        exit(1);
-    }
     int sockfd;
     socklen_t clilen;
     char buffer[1024] = {0};
@@ -83,6 +75,12 @@ int start_server() {
         exit(1);
     }
 
+    pthread_t command_thread;
+    int test = 0;
+    if (pthread_create(&command_thread, NULL, command_listener, (void *)&test) != 0) {
+        perror("Failed to create command thread");
+        exit(1);
+    }
     listen(sockfd, 5);
     clilen = sizeof(cli_addr);
 

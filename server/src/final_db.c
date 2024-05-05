@@ -1,5 +1,6 @@
 #include "final_db.h"
 #include "config.h"
+#include "final_api.h"
 
 static MYSQL *connect() {
     MYSQL *connection;
@@ -212,7 +213,7 @@ int get_user_vaults(int user_id, int **vaults, int *vault_count) {
     return 0;
 }
 
-int get_user_pages(int user_id, int **pages, int *page_count) {
+int get_user_pages(int user_id, struct Page **pages, int *page_count) {
     MYSQL *connection = connect();
     if (connection == NULL) {
         return -1;
@@ -247,7 +248,11 @@ int get_user_pages(int user_id, int **pages, int *page_count) {
     *page_count = 0;
     MYSQL_ROW row;
     while ((row = mysql_fetch_row(result))) {
-        (*pages)[*page_count] = atoi(row[0]);
+        struct Page page = {
+            .id = atoi(row[0]),
+            .version = atoi(row[7]),
+        };
+        (*pages)[*page_count] = page;
         (*page_count)++;
     }
     printf("%d\n", *page_count);
@@ -819,4 +824,5 @@ int get_user(char token[33], int *user_id) {
     *user_id = atoi(row[0]);
     mysql_free_result(result);
     disconnect(connection);
+    return 0;
 }

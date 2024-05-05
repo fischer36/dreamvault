@@ -1,4 +1,5 @@
 #pragma once
+#include "final_api.h"
 #include "mysql/mysql.h"
 #include "util.h"
 #include <stdio.h>
@@ -18,7 +19,7 @@ int update_page(int page_id, char *title, char *content, int file_size);
 int delete_page(int page_id);
 
 int get_user_vaults(int user_id, int **vaults, int *vault_count);
-int get_user_pages(int user_id, int **pages, int *page_count);
+int get_user_pages(int user_id, struct Page **pages, int *page_count);
 int get_vault_pages(int vault_id, int **pages, int *page_count);
 
 int validate_token(char token[33], int *owner_user_id);
