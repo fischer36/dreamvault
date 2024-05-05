@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::io::{Read, Write};
 
 pub static mut ADDRESS: Option<String> = None;
