@@ -6,7 +6,7 @@
 #![allow(dead_code)]
 use crate::{
     commands::{self, get_page},
-    sys::{self, modified},
+    sys::{self, modified, page_data},
 };
 use std::{
     io::{Read, Write},
@@ -24,16 +24,6 @@ pub struct Page {
     id: u64,       // ID recieved from server
     modified: u64, // Last modified in seconds
     path: String,  // Corresponding file path
-}
-
-impl Page {
-    fn new(path: &str) -> Page {
-        return Page {
-            id: 0,
-            modified: sys::modified(path),
-            path: path.to_string(),
-        };
-    }
 }
 
 impl Vault {
@@ -104,15 +94,35 @@ impl Vault {
         // println!("Saved vault: {:?}", self);
         return Ok(());
     }
-    fn pull() -> Result<(), ()> {
+    fn pull(&mut self) -> Result<(), ()> {
+        let (token, user_id) = commands::login(crate::EMAIL, crate::PASSWORD);
+        let pages: Vec<(u32, u64)> = commands::get_pages(&token, user_id);
+
+        for page in pages.iter() {
+            println!("Page - id: {:?} modified: {:?}", page.0, page.1);
+            for self_page in self.pages.iter() {
+                if self_page.id as u32 == page.0 {
+                    if self_page.modified < page.1 {
+                        println!("Updating page: {:?}", self_page.path);
+                    } else if self_page.modified > page.1 {
+                        println!("Need update Page: {:?}", self_page.path);
+                    }
+                }
+            }
+        }
         return Ok(());
     }
 
-    fn push(&self) -> Result<(), ()> {
-        for page in self.pages.iter() {
+    pub fn push(&mut self) -> Result<(), ()> {
+        for page in self.pages.iter_mut() {
             if page.id == 0 {
                 println!("New page: {:?}", page);
-                // commands::create_page(token)
+                let title = &page.path.to_string()
+                    [(page.path.find('/').unwrap() + 1)..(page.path.to_string().len() - 3)];
+
+                let page_id =
+                    commands::create_page(title, &page_data(&page.path).unwrap(), page.modified);
+                page.id = page_id;
             }
         }
         return Ok(());
@@ -137,7 +147,11 @@ impl Vault {
             .collect();
 
         for file in new_pages.iter() {
-            self.pages.push(Page::new(&file.display().to_string()));
+            self.pages.push(Page {
+                id: 0,
+                modified: sys::modified(&file.display().to_string()),
+                path: file.display().to_string(),
+            });
         }
 
         // println!("New pages: {:?}", new_pages);

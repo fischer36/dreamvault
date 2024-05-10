@@ -8,7 +8,7 @@
 
 struct Page {
     int id;
-    int version;
+    long modified;
 };
 
 void request_handler(const char request[1024], char response[1024]);

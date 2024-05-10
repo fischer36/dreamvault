@@ -235,7 +235,7 @@ int get_user_pages(int user_id, struct Page **pages, int *page_count) {
 
     int num_fields = mysql_num_rows(result);
     if (num_fields > 0) {
-        *pages = malloc(num_fields * sizeof(int));
+        *pages = malloc(num_fields * sizeof(struct Page));
         if (*pages == NULL) {
             mysql_free_result(result);
             disconnect(connection);
@@ -250,7 +250,7 @@ int get_user_pages(int user_id, struct Page **pages, int *page_count) {
     while ((row = mysql_fetch_row(result))) {
         struct Page page = {
             .id = atoi(row[0]),
-            .version = atoi(row[7]),
+            .modified = atoi(row[6]),
         };
         (*pages)[*page_count] = page;
         (*page_count)++;
@@ -384,7 +384,7 @@ int delete_vault(int vault_id) {
     return 0;
 }
 
-int insert_page(int user_id, int vault_id, char *file_path, char *title) {
+int insert_page(int user_id, int vault_id, char *file_path, long modified, char *title) {
 
     MYSQL *connection = connect();
     if (connection == NULL)
@@ -392,9 +392,9 @@ int insert_page(int user_id, int vault_id, char *file_path, char *title) {
 
     char query[1024];
     snprintf(query, sizeof(query),
-             "INSERT INTO pages (owner_id, file_path, title) VALUES "
-             "(%d, '%s', '%s')",
-             user_id, file_path, title);
+             "INSERT INTO pages (owner_id, file_path, last_modified, title) VALUES "
+             "(%d, '%s', %ld, '%s')",
+             user_id, file_path, modified, title);
 
     if (mysql_query(connection, query)) {
         printf("Error creating page: %s\n", mysql_error(connection));
@@ -406,15 +406,15 @@ int insert_page(int user_id, int vault_id, char *file_path, char *title) {
     return 0;
 }
 
-int update_page(int page_id, char *title, char *content, int file_size) {
+int update_page(int page_id, char *title, char *content, long modified, int file_size) {
 
     MYSQL *connection = connect();
     if (connection == NULL)
         return -1;
 
     char query[1024];
-    snprintf(query, sizeof(query), "UPDATE pages SET title = '%s', file_size = %d, version = version +1 WHERE page_id = %d",
-             title, file_size, page_id);
+    snprintf(query, sizeof(query), "UPDATE pages SET title = '%s', file_size = %d, last_modified = %ld WHERE page_id = %d", title,
+             file_size, modified, page_id);
 
     if (mysql_query(connection, query)) {
         printf("Error updating page: %d %s\n", page_id, mysql_error(connection));

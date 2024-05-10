@@ -70,8 +70,10 @@ void request_handler(const char request[1024], char response[1024]) {
             printf("User pages POST - user id: %d, \n", uri.Union.Page.user_id);
             char title[128];
             char content[1024];
-            response_struct = (parse_page(request, title, content)) ? t_invalid("Invalid request body")
-                                                                    : t_page_create(uri.Union.Page.user_id, title, content);
+            long modified = 0;
+            response_struct = (parse_page(request, title, &modified, content))
+                                  ? t_invalid("Invalid request body")
+                                  : t_page_create(uri.Union.Page.user_id, title, modified, content);
         }
         if (method == M_GET) {
             printf("User pages GET - user id: %d, \n", uri.Union.Page.user_id);
@@ -90,7 +92,8 @@ void request_handler(const char request[1024], char response[1024]) {
             printf("Page PATCH  - user id: %d, page id: %d\n", uri.Union.Page.user_id, uri.Union.Page.page_id);
             char title[128];
             char content[1024];
-            response_struct = (parse_page(request, title, content))
+            long modified = 0;
+            response_struct = (parse_page(request, title, &modified, content))
                                   ? t_invalid("Invalid request body")
                                   : t_page_write(uri.Union.Page.user_id, uri.Union.Page.page_id, title, content);
 

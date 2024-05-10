@@ -14,8 +14,8 @@ int delete_session(char *token);
 int insert_vault(int user_id, char *title);
 int delete_vault(int vault_id);
 
-int insert_page(int user_id, int vault_id, char *file_path, char *title);
-int update_page(int page_id, char *title, char *content, int file_size);
+int insert_page(int user_id, int vault_id, char *file_path, long modified, char *title);
+int update_page(int page_id, char *title, char *content, long modified, int file_size);
 int delete_page(int page_id);
 
 int get_user_vaults(int user_id, int **vaults, int *vault_count);

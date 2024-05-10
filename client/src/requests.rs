@@ -20,7 +20,6 @@ pub fn send(request: &[u8]) -> String {
     }
     return response;
 }
-
 pub fn parse(request_line: String, headers: String, body: String) -> String {
     return format!("{}\r\n{}\r\n\r\n{}\r\n", request_line, headers, body);
 }

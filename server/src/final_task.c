@@ -51,7 +51,7 @@ struct HTTP_RESPONSE t_get_user_pages(int user_id) {
 
     char line[70];
     for (int i = 0; i < page_count; i++) {
-        snprintf(line, sizeof(line), "id: %d, version: %d\n", pages[i].id, pages[i].version);
+        snprintf(line, sizeof(line), "id: %d, modified: %ld\n", pages[i].id, pages[i].modified);
         strcat(response.body, line);
     }
     free(pages);
@@ -95,9 +95,9 @@ struct HTTP_RESPONSE t_login(char email[EMAIL_LENGTH], char password[PASSWORD_LE
     }
 
     strcpy(response.code, "200 OK\r\n");
-    snprintf(response.headers, sizeof(response.headers), "Token: %s\r\n", token);
+    strcpy(response.body, "Login successful\r\n");
+    snprintf(response.headers, sizeof(response.headers), "Token: %s\nUser_id:%d\r\n", token, user_id);
 
-    strcpy(response.body, "Login successful");
     return response;
 }
 
@@ -173,7 +173,7 @@ struct HTTP_RESPONSE t_unregister(char token[TOKEN_LENGTH]) {
     strcpy(response.body, "Unregister successful");
     return response;
 }
-struct HTTP_RESPONSE t_page_create(int user_id, char *title, char content[PAGE_BODY_LENGTH]) {
+struct HTTP_RESPONSE t_page_create(int user_id, char *title, long modified, char content[PAGE_BODY_LENGTH]) {
     struct HTTP_RESPONSE response = {
         .code = "",
         .body = "",
@@ -233,7 +233,7 @@ struct HTTP_RESPONSE t_page_create(int user_id, char *title, char content[PAGE_B
         return response;
     }
 
-    if (insert_page(user_id, 31, file_path, title)) {
+    if (insert_page(user_id, 31, file_path, modified, title)) {
         strcpy(response.code, "500 Internal Server Error\r\n");
         strcpy(response.body, "Unable to create vault");
         return response;
@@ -288,7 +288,7 @@ struct HTTP_RESPONSE t_page_read(int user_id, int page_id) {
     int page_version = 0;
     get_page_version(page_id, &page_version);
     strcpy(response.code, "200 OK\r\n");
-    snprintf(response.body, sizeof(response.body), "Page_title: %s\r\nPage_size: %d\r\nPage_version: %d\r\nPage_content: %s\r\n",
+    snprintf(response.body, sizeof(response.body), "Page_title: %s\r\nPage_size: %lu\r\nPage_version: %d\r\nPage_content: %s\r\n",
              file_path, data_size, page_version, data);
     // strncpy(response.body, data, 512);
     if (data != NULL)
@@ -355,7 +355,7 @@ struct HTTP_RESPONSE t_page_write(int user_id, int page_id, const char title[PAG
     char page_title[255] = {0};
     int owner_id = 0;
     int page_size = 0;
-
+    int modified = 0;
     if (get_page_info(page_id, &owner_id, page_title, file_path, &page_size)) {
         strcpy(response.code, "404 Bad Request\r\n");
         strcpy(response.body, "Page file not found in database");
@@ -382,7 +382,7 @@ struct HTTP_RESPONSE t_page_write(int user_id, int page_id, const char title[PAG
     }
 
     int file_size = strlen(content);
-    if (update_page(page_id, title, content, file_size)) {
+    if (update_page(page_id, page_title, content, modified, file_size)) {
         strcpy(response.code, "500 Internal Server Error\r\n");
         strcpy(response.body, "Error updating page in database");
         return response;

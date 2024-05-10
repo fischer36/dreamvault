@@ -1,7 +1,7 @@
 #include "final_http.h"
 #include "final_api.h"
-#include "final_task.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int seralize_http_response(const struct HTTP_RESPONSE resp_struct, char resp[1024]) {
@@ -23,22 +23,27 @@ int get_value(const char *buffer, const char *key, char *value, int length) {
     // printf("length %d", length);
     if (value_start == NULL) {
 
+        printf("get_value - error value_start %s %d\n", key, length);
         return -1;
     }
     value_start += strlen(key);
     value_start += 1;
 
     if (value_start == NULL) {
+
+        printf("get_value - error value_start %s %d\n", key, length);
         return -1;
     }
 
     char *value_end = strstr(value_start, "\r\n");
     if (value_end == NULL) {
+        printf("get_value - error value_end %s %d\n", key, length);
         return -1;
     }
 
     long value_length = value_end - value_start;
-    if (value_length < 3 || value_length >= length) {
+    if (value_length < 1 || value_length >= length) {
+        printf("get_value - invalid size %s %d\n", key, length);
         return -1;
     }
 
@@ -49,14 +54,14 @@ int get_value(const char *buffer, const char *key, char *value, int length) {
 
 static int verify_token(const char *buffer, char token[TOKEN_LENGTH]) {
 
-    if (get_value(buffer, "Authentication:", token, TOKEN_LENGTH) != 0) {
+    if (get_value(buffer, "Authentication:", token, TOKEN_LENGTH) == 0) {
 
-        return -1;
+        if (strlen(token) > 0) {
+            return 0;
+        }
     }
-    if (strlen(token) == 0) {
-        return -1;
-    }
-    return 0;
+    puts("verify_token - token not found");
+    return -1;
 }
 
 static int verify_usercombo(const char *buffer, char email[EMAIL_LENGTH], char password[PASSWORD_LENGTH]) {
@@ -158,12 +163,11 @@ struct Uri http_uri(const char request[1024]) {
     }
 
     if (slash_count == 3) {
-        printf("hello");
         int user_id;
         if (sscanf(uri_str, "/users/%d/pages", &user_id) == 1) {
             uri.Union.User.user_id = user_id;
             uri.type = (verify_token(request, uri.Union.User.token)) ? U_INVALID : U_USER_PAGES;
-            printf("TOKEN %s, ", uri.Union.User.token);
+            printf("/users/id/pages/ - Token: %s \n", uri.Union.User.token);
             return uri;
         }
     }
@@ -185,13 +189,15 @@ struct Uri http_uri(const char request[1024]) {
     return uri;
 }
 
-int parse_page(const char buffer[1024], char title[PAGE_TITLE_LENGTH], char body[PAGE_BODY_LENGTH]) {
-
-    if (get_value(buffer, "page_title:", title, PAGE_TITLE_LENGTH) ||
-        get_value(buffer, "page_body:", body, PAGE_BODY_LENGTH) != 0) {
+int parse_page(const char buffer[1024], char title[PAGE_TITLE_LENGTH], long *modified, char body[PAGE_BODY_LENGTH]) {
+    char modified_str[128];
+    if (get_value(buffer, "page_title:", title, PAGE_TITLE_LENGTH) || get_value(buffer, "page_body:", body, PAGE_BODY_LENGTH) ||
+        get_value(buffer, "modified:", modified_str, 33) != 0) {
         puts("not ok");
         return -1;
     }
+
+    *modified = atol(modified_str);
     puts("ok");
     return 0;
 }

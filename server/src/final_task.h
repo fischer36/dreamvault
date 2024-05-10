@@ -10,7 +10,8 @@ struct HTTP_RESPONSE t_unregister(char token[TOKEN_LENGTH]);
 
 struct HTTP_RESPONSE t_get_user_pages(int user_id);
 struct HTTP_RESPONSE t_page_delete(int user_id, int page_id);
-struct HTTP_RESPONSE t_page_create(int user_id, char title[PAGE_TITLE_LENGTH], char content[PAGE_BODY_LENGTH]);
+struct HTTP_RESPONSE t_page_create(int user_id, char title[PAGE_TITLE_LENGTH], long modified, char content[PAGE_BODY_LENGTH]);
+
 struct HTTP_RESPONSE t_page_write(int user_id, int page_id, const char title[PAGE_TITLE_LENGTH], char content[PAGE_BODY_LENGTH]);
 struct HTTP_RESPONSE t_page_read(int user_id, int page_id);
 struct HTTP_RESPONSE t_get_user(char token[TOKEN_LENGTH]);

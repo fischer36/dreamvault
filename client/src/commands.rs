@@ -73,8 +73,8 @@ pub fn login(email: &str, password: &str) -> (String, u32) {
 
     let response = requests::send(request.as_bytes());
 
-    let token_pos = &response.find("Roken:").unwrap();
-    let token = &response[token_pos + 7..token_pos + 40];
+    let token_pos = &response.find("Token:").unwrap();
+    let token = &response[token_pos + 7..token_pos + 39];
 
     let user_pos = response
         .find("User_id:")
@@ -129,25 +129,28 @@ pub fn get_user_id(token: &str) -> u32 {
     return user_id_str.parse::<u32>().unwrap();
 }
 
-pub fn create_page(title: &str, content: &str) {
-    let token = commands::login(crate::EMAIL, crate::PASSWORD);
+pub fn create_page(title: &str, content: &str, modified: u64) -> u64 {
+    let (token, user_id) = commands::login(crate::EMAIL, crate::PASSWORD);
+    let method = "POST";
+    let uri = format!("/users/{}/pages", user_id);
 
-    // let title = "Ok new titlej";
-    // let body = "Ok new body";
-    //
-    // // let user_id = get_user_id(token);
-    // let method = "POST";
-    // // let uri = format!("/users/{}/pages", user_id);
-    // let request: String = format!(
-    //     "{} {} HTTP/1.1\r\n
-    //             Authentication: {}\r\n
-    //             \r\n
-    //             page_title: {} \r\n
-    //             page_body: {} \r\n",
-    //     method, uri, token, title, body
-    // );
-    //
-    // let response = requests::send(request.as_bytes());
+    let request: String = format!(
+        "{} {} HTTP/1.1\r\n
+                Authentication: {}\r\n
+                \r\n
+                page_title: {} \r\n
+                page_body: {} \r\n
+                modified: {}\r\n",
+        method, uri, token, title, content, modified
+    );
+    println!("request - {}", request);
+
+    let response = requests::send(request.as_bytes());
+    println!("response - {}", response);
+
+    let page_id = &response[response.find("page_id: ").unwrap() + 9..];
+
+    return page_id.parse::<u64>().unwrap();
 }
 
 pub fn get_page() {
@@ -168,9 +171,7 @@ pub fn get_page() {
     let response = requests::send(request.as_bytes());
 }
 
-pub fn get_pages(token: &str) {
-    let user_id = get_user_id(token);
-
+pub fn get_pages(token: &str, user_id: u32) -> Vec<(u32, u64)> {
     let method = "GET";
     let uri = format!("/users/{}/pages", user_id);
 
@@ -180,8 +181,24 @@ pub fn get_pages(token: &str) {
                 \r\n",
         method, uri, token,
     );
-
     let response = requests::send(request.as_bytes());
+
+    let mut pages = vec![];
+    for page in response.lines().skip(10) {
+        println!("Page: {}", page);
+        let parts: Vec<&str> = page.split(", ").collect();
+
+        // Extract the id part and parse it as u32
+        let id_str = parts[0].split(": ").nth(1).unwrap();
+        let id: u32 = id_str.parse().unwrap();
+
+        // Extract the modified part and parse it as u64
+        let modified_str = parts[1].split(": ").nth(1).unwrap();
+        let modified: u64 = modified_str.parse().unwrap();
+
+        pages.push((id, modified));
+    }
+    return pages;
 }
 
 pub fn sync_page() {

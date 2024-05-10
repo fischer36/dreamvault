@@ -45,4 +45,4 @@ struct Uri http_uri(const char request[1024]);
 
 int seralize_http_response(const struct HTTP_RESPONSE resp_struct, char resp[1024]);
 
-int parse_page(const char buffer[1024], char title[PAGE_TITLE_LENGTH], char body[PAGE_BODY_LENGTH]);
+int parse_page(const char buffer[1024], char title[PAGE_TITLE_LENGTH], long *modified, char body[PAGE_BODY_LENGTH]);
