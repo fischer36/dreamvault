@@ -11,4 +11,4 @@
 - [X] Client App
 - [X] Client sync workspace
 - [ ] Client error checking and terminal commands
-- [ ] Intergrate server-vault and db with docker. 
+- [ ] Integrate server-vault and db with docker. 
