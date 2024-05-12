@@ -4,4 +4,4 @@ client/target
 client/.auth
 server/pages/
 server/build/
-server/src/old/
+server/src/old
