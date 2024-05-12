@@ -12,29 +12,28 @@
 #include <threads.h>
 #include <unistd.h>
 
-volatile int server_running = 1;
 #define MAX_CLIENTS 10
-pthread_t thread_handles[MAX_CLIENTS];
-int thread_count = 0;
+volatile int server_running = 1;
 
-void *handle_client(void *client_socket) {
-    printf("Client connected, current thread count: %d\n", thread_count);
-    int sock = *(int *)client_socket;
+struct Client {
+    pthread_t thread;
+    int socket;
+    int is_active;
+};
+
+void *handle_client(void *client_ptr) {
+    struct Client *client = (struct Client *)client_ptr;
     char buffer[1024];
-
     memset(buffer, 0, 1024);
-    read(sock, buffer, 1024);
-
+    read(client->socket, buffer, 1024);
     char response[1024];
     printf("request buffer %s\n", buffer);
     request_handler(buffer, response);
     printf("Response: %s\n", response);
-    write(sock, response, strlen(response));
-
+    write(client->socket, response, strlen(response));
     sleep(1);
-    close(sock);
-    free(client_socket);
-    printf("Closing client, current thread count: %d\n", thread_count);
+    client->is_active = 0;
+    close(client->socket);
     return NULL;
 }
 
@@ -94,48 +93,69 @@ int start_server() {
         perror("Could not set sockfd to non-blocking");
         exit(EXIT_FAILURE);
     }
+
+    struct Client clients[MAX_CLIENTS] = {0};
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        struct Client client = {
+            .thread = -1,
+            .socket = -1,
+            .is_active = 0,
+        };
+        clients[i] = client;
+    }
     while (server_running == 1) {
-        // printf("Waiting for client...\n");
-        if (thread_count >= MAX_CLIENTS) {
-            printf("To many clients, exiting looop and joining threads");
-            break;
-        }
-        int *newsockfd = malloc(sizeof(int));
-
-        *newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
-
-        if (*newsockfd < 0) {
+        int newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+        if (newsockfd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 usleep(1000000);
-                free(newsockfd);
                 continue;
             } else {
                 perror("ERROR on accept");
-                free(newsockfd);
                 break;
             }
         }
 
-        pthread_t thread;
-        if (pthread_create(&thread, NULL, handle_client, (void *)newsockfd) != 0) {
-            perror("Thread creation failed");
-            close(*newsockfd);
-            free(newsockfd);
+        int found_replacement = 0;
+        while (found_replacement == 0) {
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (clients[i].is_active == 0) {
+                    printf("Found inactive client index: %d\n", i);
+                    if (clients[i].thread != -1) {
+                        puts("Joining inactive client thread\n");
+                        pthread_join(clients[i].thread, NULL);
+                    }
+                    clients[i].is_active = 1;
+                    clients[i].socket = newsockfd;
+                    pthread_t thread;
+                    if (pthread_create(&thread, NULL, handle_client, (void *)&clients[i]) != 0) {
+                        perror("Thread creation failed");
+                        exit(1);
+                    }
+                    clients[i].thread = thread;
+                    found_replacement = 1;
+                    break;
+                }
+            }
+            sleep(1);
         }
-
-        thread_handles[thread_count] = thread;
-        thread_count++;
     }
-
     server_running = 0;
     pthread_join(command_thread, NULL);
     puts("Command Thread has been joined");
-    for (int i = 0; i < thread_count; i++) {
-
-        printf("Trying to join thread for client %d\n", i);
-        pthread_join(thread_handles[i], NULL);
-        printf("Joined thread for client %d\n", i);
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        struct Client client = clients[i];
+        if (client.is_active == 1) {
+            if (client.socket != -1) {
+                close(client.socket);
+            }
+            if (client.thread != -1) {
+                pthread_join(client.thread, NULL);
+                printf("Joined thread for client %d\n", i);
+            }
+        }
     }
+
     close(sockfd);
     return 0;
 }
