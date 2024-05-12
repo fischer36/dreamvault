@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 
 use crate::commands;
 use crate::requests;
+use crate::sys;
 pub fn register(email: &str, password: &str) {
     let method = "POST";
     let uri = "/register";
@@ -43,17 +44,38 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub fn login(email: &str, password: &str) -> (String, u32) {
     let auth_path = ".auth";
     if let Ok(mut file) = File::open(auth_path) {
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
+        let last_modified = file
+            .metadata()
+            .unwrap()
+            .modified()
+            .unwrap()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
-        let parts: Vec<&str> = contents.split(':').collect();
-        if parts.len() == 2 {
-            let token = parts[0];
-            let user_id = parts[1].parse::<u32>().unwrap_or(0);
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
-            println!("token {}", token);
-            println!("user_id {}", user_id);
-            return (token.to_string(), user_id);
+        let seconds_in_day = 86400;
+
+        if now - last_modified < seconds_in_day {
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+
+            let parts: Vec<&str> = contents.split(':').collect();
+            if parts.len() == 2 {
+                let token = parts[0];
+                let user_id = parts[1].parse::<u32>().unwrap_or(0);
+
+                // println!("token {}", token);
+                // println!("user_id {}", user_id);
+                return (token.to_string(), user_id);
+            }
+        } else {
+            println!("Token is expired");
+            sys::remove_file(".auth");
         }
     }
     let method = "POST";
@@ -153,12 +175,10 @@ pub fn create_page(title: &str, content: &str, modified: u64) -> u64 {
     return page_id.parse::<u64>().unwrap();
 }
 
-pub fn get_page() {
-    let page_id = 72;
-    let user_id = 35;
-    let token = "d7118ed59ab3b8f263dbdd54596a7d83";
+pub fn get_page(page: crate::vault::Page) -> String {
+    let (token, user_id) = commands::login(crate::EMAIL, crate::PASSWORD);
     let method = "GET";
-    let uri = format!("/users/{}/pages/{}", user_id, page_id);
+    let uri = format!("/users/{}/pages/{}", user_id, page.id);
 
     let request: String = format!(
         "{} {} HTTP/1.1\r\n
@@ -169,6 +189,12 @@ pub fn get_page() {
     );
 
     let response = requests::send(request.as_bytes());
+
+    println!("Response: {}", response);
+    response.find("Page_content: ").unwrap();
+
+    let page_content = &response[response.find("Page_content: ").unwrap() + 15..];
+    return page_content.to_string();
 }
 
 pub fn get_pages(token: &str, user_id: u32) -> Vec<(u32, u64)> {
@@ -183,43 +209,52 @@ pub fn get_pages(token: &str, user_id: u32) -> Vec<(u32, u64)> {
     );
     let response = requests::send(request.as_bytes());
 
+    println!("Response: {}", response);
+
     let mut pages = vec![];
-    for page in response.lines().skip(10) {
-        println!("Page: {}", page);
-        let parts: Vec<&str> = page.split(", ").collect();
+    for line in response.lines() {
+        if line.starts_with("id: ") {
+            let page = line;
+            let parts: Vec<&str> = page.split(", ").collect();
+            // Extract the id part and parse it as u32
+            let id_str = parts[0].split(": ").nth(1).unwrap();
+            let id: u32 = id_str.parse().unwrap();
 
-        // Extract the id part and parse it as u32
-        let id_str = parts[0].split(": ").nth(1).unwrap();
-        let id: u32 = id_str.parse().unwrap();
+            // Extract the modified part and parse it as u64
+            let modified_str = parts[1].split(": ").nth(1).unwrap();
+            let modified: u64 = modified_str.parse().unwrap();
 
-        // Extract the modified part and parse it as u64
-        let modified_str = parts[1].split(": ").nth(1).unwrap();
-        let modified: u64 = modified_str.parse().unwrap();
-
-        pages.push((id, modified));
+            pages.push((id, modified));
+        }
     }
+    println!("Pages len: {:?}", pages.len());
     return pages;
 }
 
-pub fn sync_page() {
-    let page_title = "Ok new titlej";
-    let page_id = 72;
-    let page_content = "jaha";
-    let token = "d7118ed59ab3b8f263dbdd54596a7d83";
-    let user_id = 35;
-    let method = "PATCH";
-    let uri = format!("/users/{}/pages/{}", user_id, page_id);
-    let title = "Ok new titlej";
-    let body = "Ok new body";
-    let request: String = format!(
-        "{} {} HTTP/1.1\r\n
-                Host: localhost\r\n
-                Authentication: {}\r\n
-                \r\n
-                page_title: {} \r\n
-                page_body: {} \r\n",
-        method, uri, token, title, body
-    );
+pub mod query {
+    pub fn view_vault(vault: &crate::vault::Vault) {
+        let (token, user_id) = crate::commands::login(crate::EMAIL, crate::PASSWORD);
+        println!("");
+        println!("Name: {} ", vault.name);
+        println!("User id: {} Token: {} ", user_id, token);
 
-    let response = requests::send(request.as_bytes());
+        println!("Pages ({}): ", vault.pages.len());
+
+        let curr = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        for page in vault.pages.iter() {
+            let last = (curr - page.modified) / 60 / 60;
+            let synced = if page.id == 0 { "✔" } else { "✖" };
+
+            println!(
+                "Id: {} Modified: {}-hours ago Synced: {} Path: {}",
+                page.id, last, synced, page.path
+            );
+        }
+
+        println!("");
+    }
 }

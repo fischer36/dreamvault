@@ -15,25 +15,26 @@ use std::{
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Vault {
-    name: String,
-    pages: Vec<Page>,
+    pub name: String,
+    pub pages: Vec<Page>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Page {
-    id: u64,       // ID recieved from server
-    modified: u64, // Last modified in seconds
-    path: String,  // Corresponding file path
+    pub id: u64,       // ID recieved from server
+    pub modified: u64, // Last modified in seconds
+    pub path: String,  // Corresponding file path
 }
 
 impl Vault {
     pub fn create() -> Result<Vault, ()> {
-        let test_vault_path = "./.vault";
-
-        if std::fs::create_dir(test_vault_path).is_err() {
-            // return Err("Vault folder already exists".to_string());
+        if sys::path_exists(".vault/") == true {
             return Err(());
         }
+
+        let test_vault_path = "./.vault";
+
+        std::fs::create_dir(test_vault_path).expect("Vault folder already exists");
 
         let mut pages = vec![];
 
@@ -48,7 +49,7 @@ impl Vault {
                         .unwrap()
                         .path()
                         .metadata()
-                        .unwrap()
+                        .expect("metadata")
                         .modified()
                         .unwrap()
                         .duration_since(std::time::UNIX_EPOCH)
@@ -94,18 +95,23 @@ impl Vault {
         // println!("Saved vault: {:?}", self);
         return Ok(());
     }
-    fn pull(&mut self) -> Result<(), ()> {
+    pub fn pull(&mut self) -> Result<(), ()> {
         let (token, user_id) = commands::login(crate::EMAIL, crate::PASSWORD);
         let pages: Vec<(u32, u64)> = commands::get_pages(&token, user_id);
 
-        for page in pages.iter() {
-            println!("Page - id: {:?} modified: {:?}", page.0, page.1);
-            for self_page in self.pages.iter() {
-                if self_page.id as u32 == page.0 {
-                    if self_page.modified < page.1 {
-                        println!("Updating page: {:?}", self_page.path);
-                    } else if self_page.modified > page.1 {
-                        println!("Need update Page: {:?}", self_page.path);
+        println!("Page count: {:?}", self.pages.len());
+        for local_page in self.pages.iter_mut() {
+            println!(
+                "Local Page - id: {:?} modified: {:?}",
+                local_page.id, local_page.modified
+            );
+            for page in pages.iter() {
+                if page.0 as u64 == local_page.id {
+                    if page.1 > local_page.modified {
+                        println!("Pulling page: {:?}", local_page.path);
+                        let new_page_content = commands::get_page(local_page.clone());
+                        sys::write_file(&local_page.path, &new_page_content);
+                        local_page.modified = page.1;
                     }
                 }
             }
@@ -114,17 +120,43 @@ impl Vault {
     }
 
     pub fn push(&mut self) -> Result<(), ()> {
-        for page in self.pages.iter_mut() {
-            if page.id == 0 {
-                println!("New page: {:?}", page);
-                let title = &page.path.to_string()
-                    [(page.path.find('/').unwrap() + 1)..(page.path.to_string().len() - 3)];
+        let (token, user_id) = commands::login(crate::EMAIL, crate::PASSWORD);
+        let pages: Vec<(u32, u64)> = commands::get_pages(&token, user_id);
 
-                let page_id =
-                    commands::create_page(title, &page_data(&page.path).unwrap(), page.modified);
-                page.id = page_id;
+        for local_page in self.pages.iter_mut() {
+            if local_page.id == 0 {
+                println!("Creating new page: {:?}", local_page.path);
+                let title = &local_page.path.to_string()[(local_page.path.find('/').unwrap() + 1)
+                    ..(local_page.path.to_string().len() - 3)];
+
+                let page_id = commands::create_page(
+                    title,
+                    &page_data(&local_page.path).unwrap(),
+                    local_page.modified,
+                );
+                local_page.id = page_id;
+            } else {
+                for page in pages.iter() {
+                    if page.0 as u64 == local_page.id {
+                        if page.1 < local_page.modified {
+                            println!("Pushing page: {:?}", local_page.path);
+                            let new_page_content = commands::get_page(local_page.clone());
+                            sys::write_file(&local_page.path, &new_page_content);
+                            local_page.modified = page.1;
+                        } else {
+                            println!("Page is already updated: {:?}", local_page.path);
+                        }
+                    }
+                }
             }
         }
+        return Ok(());
+    }
+
+    pub fn sync(&mut self) -> Result<(), ()> {
+        for page in self.pages.iter_mut() {}
+        self.pull()?;
+        self.push()?;
         return Ok(());
     }
 
@@ -158,3 +190,23 @@ impl Vault {
         return Ok(());
     }
 }
+/*
+           for page in pages.iter() {
+               if page.0 as u64 == local_page.id {
+                   println!("\n");
+                   if page.1 > local_page.modified {
+                       println!("Updating page: {:?}", local_page.path);
+                       let new_page_content = commands::get_page(local_page.clone());
+                       sys::write_file(&local_page.path, &new_page_content);
+                       local_page.modified = page.1;
+                   } else if page.1 < local_page.modified {
+
+                       println!("Need update Page: {:?}", local_page.path);
+                   } else if page.1 as u64 == local_page.modified {
+                       println!("Page updated already: {:?}", local_page.path);
+                   }
+                   println!("\n");
+               }
+           }
+           //
+* sys*/

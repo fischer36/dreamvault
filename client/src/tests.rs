@@ -35,3 +35,13 @@ fn modified() {
 
     println!("{:?}", modified);
 }
+
+#[test]
+pub fn remove_file() {
+    let path = ".auth";
+    assert!(std::fs::File::create_new(".auth").is_ok());
+    println!("File created");
+
+    assert!(std::fs::remove_file(path).is_ok());
+    println!("File deleted");
+}

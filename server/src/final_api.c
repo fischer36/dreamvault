@@ -18,7 +18,7 @@ static int verify_user_id(const char token[TOKEN_LENGTH], int user_id) {
     }
 
     if (actual_token_owner_user_id != user_id) {
-        return -1;
+        return -2;
     }
     return 0;
 }
@@ -30,14 +30,17 @@ void request_handler(const char request[1024], char response[1024]) {
     struct Uri uri = http_uri(request);
     printf("uri type %d ", uri.type);
     printf(" method %d", method);
+    int result = 0;
     switch (uri.type) {
     case U_REGISTER:
+        puts("U_REGISTER");
         if (method == M_POST) {
             printf("Register - email: %s, password: %s\n", uri.Union.UserCombo.email, uri.Union.UserCombo.password);
             response_struct = t_register(uri.Union.UserCombo.email, uri.Union.UserCombo.password);
         }
         break;
     case U_UNREGISTER:
+        puts("U_UNREGISTER");
         if (method == M_POST) {
             printf("Unregister - token: %s\n", uri.Union.Token.token);
             response_struct = t_unregister(uri.Union.Token.token);
@@ -50,20 +53,27 @@ void request_handler(const char request[1024], char response[1024]) {
         }
         break;
     case U_LOGOUT:
+        puts("U_LOGOUT");
         if (method == M_POST) {
             printf("Logout - token: %s\n", uri.Union.Token.token);
             response_struct = t_logout(uri.Union.Token.token);
         }
         break;
     case U_USERS:
+        puts("U_USERS");
         if (method == M_GET) {
             printf("Users GET\n");
             response_struct = t_get_user(uri.Union.Token.token);
         }
         break;
     case U_USER_PAGES:
-        if (verify_user_id(uri.Union.User.token, uri.Union.User.user_id) != 0) {
-            response_struct = t_invalid("Invalid token");
+        puts("U_USER_PAGES");
+        if ((result = verify_user_id(uri.Union.User.token, uri.Union.User.user_id) != 0)) {
+            if (result == -2) {
+                response_struct = t_invalid_2("404 Unauthorized", "Invalid token xd");
+            } else {
+                response_struct = t_invalid_2("400 Bad Requestxd", "bad request");
+            }
             break;
         }
         if (method == M_POST) {
@@ -81,8 +91,13 @@ void request_handler(const char request[1024], char response[1024]) {
         }
         break;
     case U_USER_PAGE:
-        if (verify_user_id(uri.Union.Page.token, uri.Union.Page.user_id) != 0) {
-            response_struct = t_invalid("Invalid token");
+        puts("U_USER_PAGE");
+        if ((result = verify_user_id(uri.Union.Page.token, uri.Union.Page.user_id) != 0)) {
+            if (result == -2) {
+                response_struct = t_invalid("Invalid token xd");
+            } else {
+                response_struct = t_invalid("bad request");
+            }
             break;
         }
         if (method == M_GET) {
@@ -103,6 +118,7 @@ void request_handler(const char request[1024], char response[1024]) {
         }
         break;
     case U_INVALID:
+        puts("U_INVALID");
         response_struct = t_invalid(uri.Union.Invalid);
         break;
     }

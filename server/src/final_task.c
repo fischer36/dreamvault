@@ -45,18 +45,29 @@ struct HTTP_RESPONSE t_get_user_pages(int user_id) {
     // for (int i = 0; i < page_count; i++) {
     //     printf("%d\n", page_ids[i]);
     // }
-
+    // printf("page count %d %lu\n", page_count, page_count * sizeof(struct Page));
+    // if (page_count * sizeof(struct Page) > 512) {
+    //
+    //     // printf("To many pages to fit in response body \r\n");
+    //     strcpy(response.code, "500 Internal Error\r\n");
+    //     strcpy(response.body, "To many pages to fit in response body \r\n");
+    //     free(pages);
+    //     return response;
+    // }
     strcpy(response.code, "200 OK\r\n");
-    strcpy(response.body, "Pages:\r\n");
+    char linexd[70];
+    sprintf(linexd, "Pages (%d): \r\n", page_count);
+    strcpy(response.body, linexd);
 
     char line[70];
-    for (int i = 0; i < page_count; i++) {
+    for (int i = 0; i < page_count && i < 32; i++) {
         snprintf(line, sizeof(line), "id: %d, modified: %ld\n", pages[i].id, pages[i].modified);
         strcat(response.body, line);
     }
     free(pages);
     return response;
 }
+
 struct HTTP_RESPONSE t_login(char email[EMAIL_LENGTH], char password[PASSWORD_LENGTH]) {
 
     struct HTTP_RESPONSE response = {
@@ -392,6 +403,19 @@ struct HTTP_RESPONSE t_page_write(int user_id, int page_id, const char title[PAG
     return response;
 }
 
+struct HTTP_RESPONSE t_invalid_2(char *error_code, char *error_msg) {
+
+    struct HTTP_RESPONSE response = {
+        .code = "",
+        .body = "",
+        .headers = "",
+    };
+
+    strcpy(response.code, error_code);
+    strcpy(response.body, error_msg);
+
+    return response;
+}
 struct HTTP_RESPONSE t_invalid(char *error_msg) {
 
     struct HTTP_RESPONSE response = {

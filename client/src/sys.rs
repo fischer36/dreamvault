@@ -34,3 +34,15 @@ pub fn modified(path: &str) -> u64 {
     // println!("{:?}", modified);
     return modified;
 }
+
+pub fn path_exists(path: &str) -> bool {
+    return std::fs::metadata(path).is_ok();
+}
+
+pub fn remove_file(path: &str) {
+    std::fs::remove_file(path).unwrap();
+}
+
+pub fn write_file(path: &str, content: &str) {
+    std::fs::write(path, content).unwrap();
+}

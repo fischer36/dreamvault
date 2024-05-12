@@ -6,8 +6,9 @@
 - build-essential, gcc & make
 
 ## TODO:
-- [X] Docker
+- [X] Docker setup
 - [X] Sort out dependencies
-- [ ] Client App
-- [ ] Client sync workspace
-- [ ] Intergrate server-vault and db in regards to docker. 
+- [X] Client App
+- [X] Client sync workspace
+- [ ] Client error checking and terminal commands
+- [ ] Intergrate server-vault and db with docker. 

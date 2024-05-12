@@ -2,6 +2,7 @@
 #include "final_http.h"
 
 struct HTTP_RESPONSE t_invalid(char *error_msg);
+struct HTTP_RESPONSE t_invalid_2(char *error_code, char *error_msg);
 
 struct HTTP_RESPONSE t_login(char email[EMAIL_LENGTH], char password[PASSWORD_LENGTH]);
 struct HTTP_RESPONSE t_register(char email[EMAIL_LENGTH], char password[PASSWORD_LENGTH]);
