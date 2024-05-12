@@ -1,7 +1,9 @@
 client/src/old
 client/.vault
 client/target
+client/*.md
 client/.auth
 server/pages/
 server/build/
 server/src/old
+server/server
