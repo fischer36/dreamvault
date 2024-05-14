@@ -1,25 +1,36 @@
-
 version: '3.1'
 
 services:
   app:
     build: .
+    container_name: dreamvault_app
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       - db
     environment:
       DATABASE_HOST: db
       DATABASE_USER: root
       DATABASE_PASSWORD: example
+      DATABASE_NAME: dreamvault
+    networks:
+      - localnet
 
   db:
-    image: mysql:5.7
+    image: mysql:8.0
+    container_name: dreamvault_db
     environment:
       MYSQL_ROOT_PASSWORD: example
-      MYSQL_DATABASE: myapp
+      MYSQL_DATABASE: dreamvault
     volumes:
       - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - localnet
 
 volumes:
   db_data:
+
+networks:
+  localnet:
+    driver: bridge

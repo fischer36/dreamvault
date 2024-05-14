@@ -22,6 +22,7 @@ pub fn register(email: &str, password: &str) {
     );
 
     let response = requests::send(request.as_bytes());
+    // println!("{}", response);
 }
 
 pub fn unregister(token: &str) {
@@ -232,8 +233,12 @@ pub fn get_pages(token: &str, user_id: u32) -> Vec<(u32, u64)> {
 }
 
 pub mod query {
+    use crate::requests::read_port;
+
     pub fn view_vault(vault: &crate::vault::Vault) {
         let (token, user_id) = crate::commands::login(crate::EMAIL, crate::PASSWORD);
+        let port = read_port();
+        println!("Server Address: localhost:");
         println!("");
         println!("Name: {} ", vault.name);
         println!("User id: {} Token: {} ", user_id, token);
@@ -247,7 +252,7 @@ pub mod query {
 
         for page in vault.pages.iter() {
             let last = (curr - page.modified) / 60 / 60;
-            let synced = if page.id == 0 { "✔" } else { "✖" };
+            let synced = if page.id == 0 { "✖" } else { "✔" };
 
             println!(
                 "Id: {} Modified: {}-hours ago Synced: {} Path: {}",

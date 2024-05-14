@@ -263,8 +263,11 @@ int get_user_pages(int user_id, struct Page **pages, int *page_count) {
 
 int insert_user(char *email, char *password) {
     MYSQL *connection = connect();
-    if (connection == NULL)
+    if (connection == NULL) {
+
+        printf("conection error \n");
         return -1;
+    }
 
     char query[1024];
 

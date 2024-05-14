@@ -5,13 +5,18 @@ mod sys;
 mod tests;
 
 pub mod vault;
-pub const EMAIL: &str = "ssample@gmail.com";
-pub const PASSWORD: &str = "samplePass123";
+pub const EMAIL: &str = "4ssample@gmail.com";
+pub const PASSWORD: &str = "2samplePass123";
 
 fn main() {
-    let mut vault = vault::Vault::load().unwrap();
-    commands::query::view_vault(&vault);
-    vault.scan();
-    vault.save();
+    commands::register(EMAIL, PASSWORD);
+    let (token, user_id) = commands::login(EMAIL, PASSWORD);
+    commands::get_pages(&token, user_id);
+    // let mut vault = vault::Vault::load().unwrap();
+    // vault.push();
+    //
+    // commands::query::view_vault(&vault);
+    // vault.scan();
+    // vault.save();
     return;
 }

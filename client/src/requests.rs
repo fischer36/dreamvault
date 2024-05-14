@@ -11,12 +11,12 @@ pub fn send(request: &[u8]) -> String {
         }
         addy = ADDRESS.clone().unwrap();
     }
-    let mut stream = std::net::TcpStream::connect(addy).unwrap();
+    let mut stream = std::net::TcpStream::connect("localhost:8080").unwrap();
     let result = stream.write_all(request);
 
     let mut response = String::new();
     if stream.read_to_string(&mut response).is_ok() {
-        // println!("Response: {}", response);
+        println!("Response: {}", response);
     }
     return response;
 }
